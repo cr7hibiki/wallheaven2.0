@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -28,11 +29,18 @@ var (
 	resolutions = flag.String("resolutions", "", "指定尺寸, 逗号隔开")
 	ratios      = flag.String("ratios", "", "长宽比例")
 	seed        = flag.String("seed", "", "随机种子(翻页时带上 确保不会重复)")
+	sortArr     = []string{"date_added", "relevance", "random", "views", "favorites", "toplist"}
 )
 
 func main() {
 	fmt.Println("输入CTRL+C停止程序")
 	flag.Parse()
+	fmt.Println("是否要自选参数? (y | n)")
+	var choose string
+	fmt.Scanln(&choose)
+	if strings.ToLower(choose) == "y" {
+		Custom()
+	}
 	v := url.Values{}
 	if apikey != "" {
 		v.Add("apikey", apikey)
@@ -70,7 +78,6 @@ func main() {
 	}
 	rowReq := v.Encode()
 	req, _ := url.QueryUnescape(rowReq)
-	fmt.Println(req)
 	url := rowUrl
 	if req != "" {
 		url = rowUrl + "?" + req
@@ -123,13 +130,12 @@ func Download(url string, index int) {
 			fmt.Println(err.Error())
 		}
 		resp.Body.Close()
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 1)
 	}
 	if len(data.Data) == 0 {
 		return
 	}
 	Download(url, int(data.Meta.CurrentPage+1))
-	return
 }
 
 type ImageList struct {
@@ -165,4 +171,81 @@ type ImageList struct {
 		Seed        interface{} `json:"seed"`
 		Total       int64       `json:"total"`
 	} `json:"meta"`
+}
+
+func Custom() {
+	// 关键词
+	fmt.Print("请输入搜索关键词:")
+	fmt.Scanln(q)
+	fmt.Println("请选择分类(可多选): (1) 一般 (2) 动漫 (3) 人物 ")
+	// 分类
+	var cateArr = []string{"0", "0", "0"}
+	var cateStr string
+	fmt.Scanln(&cateStr)
+	if strings.Contains(cateStr, "1") {
+		cateArr[0] = "1"
+	}
+	if strings.Contains(cateStr, "2") {
+		cateArr[1] = "1"
+	}
+	if strings.Contains(cateStr, "3") {
+		cateArr[2] = "1"
+	}
+	*categories = strings.Join(cateArr, "")
+	// 纯洁度
+	fmt.Println("请选择纯度(可多选) (1) sfw (2) sketchy (3) nsfw")
+	var purityArr = []string{"0", "0", "0"}
+	var purityStr string
+	fmt.Scanln(&purityStr)
+	if strings.Contains(purityStr, "1") {
+		purityArr[0] = "1"
+	}
+	if strings.Contains(purityStr, "2") {
+		purityArr[1] = "1"
+	}
+	if strings.Contains(purityStr, "3") {
+		purityArr[2] = "1"
+	}
+	*purity = strings.Join(purityArr, "")
+	fmt.Println("是否进行更多配置? (y | n)")
+	var choose string
+	fmt.Scanln(&choose)
+	if strings.ToLower(choose) == "y" {
+		// 排序方式
+		fmt.Println("请选择排序方式: (1) 日期 (2) 关联性 (3) 随机 (4) 观看数 (5) 收藏数 (6) 排行 ")
+		var sType string
+		fmt.Scanln(&sType)
+		switch sType {
+		case "1":
+			*sorting = sortArr[0]
+		case "2":
+			*sorting = sortArr[1]
+		case "3":
+			*sorting = sortArr[2]
+		case "4":
+			*sorting = sortArr[3]
+		case "5":
+			*sorting = sortArr[4]
+		case "6":
+			*sorting = sortArr[5]
+		default:
+			*sorting = sortArr[0]
+		}
+		// 升序降序
+		fmt.Println("请选择顺序: (1) 降序 (2) 升序")
+		var pOrder string
+		fmt.Scanln(&pOrder)
+		if pOrder == "2" {
+			*order = "asc"
+		}
+		fmt.Println("请指定最小尺寸, 如1920x1980:")
+		var resolu string
+		fmt.Scanln(&resolu)
+		if resolu != "" {
+			r, _ := regexp.Compile(`^\d{3,5}x\d{3,5}$`)
+			if r.MatchString(resolu) {
+				*resolutions = resolu
+			}
+		}
+	}
 }
