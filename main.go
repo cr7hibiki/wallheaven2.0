@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	apikey      = ""
+	apikey      = "LEo4r69FDN7XGwSF1wKNiT5NcRHwh1D9"
 	rowUrl      = "https://wallhaven.cc/api/v1/search"
 	q           = flag.String("q", "", "关键词")
 	categories  = flag.String("categories", "", "分类(一般/动漫/人物)")                                                     // (一般/动漫/人物)
@@ -75,7 +75,7 @@ func main() {
 	if req != "" {
 		url = rowUrl + "?" + req
 	}
-	go Download(url, 1)
+	Download(url, 1)
 }
 
 // 下载直到最后一页
